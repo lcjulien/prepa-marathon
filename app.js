@@ -427,7 +427,7 @@ function viewPlan() {
   <div class="weeks" id="weeks">${G.weeks.map(x => `<button class="wchip p-${x.phase.id} ${x.n === cw ? 'now' : ''}" data-action="goweek" data-val="${x.n}" ${x.n === n ? 'aria-current="true"' : ''} aria-label="Semaine ${x.n}">${x.n}</button>`).join('')}</div>
   <section class="card whead">
     <div class="row"><h3>Semaine ${n}</h3><span class="muted small">${dShort(w.start)} au ${dShort(w.end)}</span></div>
-    <div class="row"><span class="pill solid" style="background:${phaseCol[w.phase.id]};color:${w.phase.id === 'base' || w.phase.id === 'spec' ? '#fff' : 'var(--ink)'}">${w.phase.name}${w.rec ? ', récupération' : ''}</span><span class="small"><b>${num(A[n])}</b> / ${num(Pl[n])} km${n === 26 ? ' (course incluse)' : ''}</span></div>
+    <div class="row"><span class="pill solid" style="background:${phaseCol[w.phase.id]};color:${w.phase.id === 'base' || w.phase.id === 'spec' ? '#fff' : 'var(--on-bright)'}">${w.phase.name}${w.rec ? ', récupération' : ''}</span><span class="small"><b>${num(A[n])}</b> / ${num(Pl[n])} km${n === 26 ? ' (course incluse)' : ''}</span></div>
     ${w.scale < 1 ? `<p class="small muted">Semaine allégée de ${Math.round((1 - w.scale) * 100)} %.</p>` : ''}
     <div class="btns">${n >= cw && n < N_WEEKS && w.scale === 1 ? `<button class="btn ghost small" data-action="lighten" data-val="${n}">Alléger de 20 %</button>` : ''}${w.scale < 1 ? `<button class="btn ghost small" data-action="unlighten" data-val="${n}">Revenir au plan normal</button>` : ''}</div>
   </section>
