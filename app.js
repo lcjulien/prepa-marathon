@@ -252,7 +252,7 @@ const DB = 'prepa-marathon-2027', STORE = 'kv', KEY = 'state';
 const defaultState = () => ({
   v: 1,
   settings: { targetSec: 12000, startTime: '08:30', sessionsMode: 'auto', strength: true, carbsPerH: 60, gelCarbs: 25, reduceMotion: false },
-  refs: [{ id: 'r0', date: null, distKm: 20, timeSec: 5460, label: '20 km de Tours' }],
+  refs: [{ id: 'r0', date: '2026-09-27', distKm: 20, timeSec: 5460, label: '20 km de Tours' }],
   activeRef: 'r0',
   sess: {},       // { "12-1": { status, movedTo, doneDate, km, dur, rpe, hr, shoe, note } }
   weekScale: {},  // { 12: 0.8 }
@@ -279,7 +279,12 @@ async function load() {
   return defaultState();
 }
 
-const merge = v => { const d = defaultState(); return { ...d, ...v, settings: { ...d.settings, ...(v.settings || {}) } }; };
+const merge = v => {
+  const d = defaultState(), out = { ...d, ...v, settings: { ...d.settings, ...(v.settings || {}) } };
+  // Migration : date du 20 km de Tours (27 septembre 2026) pour les données déjà enregistrées
+  if (Array.isArray(out.refs)) out.refs = out.refs.map(r => r.id === 'r0' && !r.date ? { ...r, date: '2026-09-27' } : r);
+  return out;
+};
 
 async function save(state) {
   try {
