@@ -34,7 +34,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 [data-motion="off"] .ticker-track { animation: none; }
 @media (prefers-reduced-motion: reduce) { .ticker-track { animation: none; } * { scroll-behavior: auto !important; transition: none !important; } }
 
-main { max-width: 680px; margin: 0 auto; padding: 16px 16px 8px; display: grid; gap: 16px; outline: 0; }
+main { max-width: 680px; margin: 0 auto; padding: 16px 16px 8px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; outline: 0; }
 .sec-title { font-family: var(--display); font-weight: 900; text-transform: uppercase; font-size: 30px; line-height: .95; margin: 10px 2px 0; }
 .sec-sub { color: var(--muted); font-size: 14px; margin: -8px 2px 0; }
 
@@ -163,7 +163,14 @@ input[type=text], input[type=number], input[type=date], input[type=time], select
   font: inherit; font-weight: 500; color: var(--ink); background: var(--paper); border: 2px solid var(--line); border-radius: 14px; padding: 11px 13px; width: 100%; min-height: 46px; }
 input:focus, select:focus, textarea:focus { border-color: var(--violet); outline: 0; }
 textarea { min-height: 80px; resize: vertical; }
-.fgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.fgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.fgrid > *, label.f { min-width: 0; }
+input, select, textarea { max-width: 100%; min-width: 0; }
+/* Champs date et heure natifs : largeur propre réduite à celle de la colonne */
+input[type=date], input[type=time] { -webkit-appearance: none; appearance: none; display: block; text-align: left; line-height: 1.2; }
+input[type=date]::-webkit-date-and-time-value, input[type=time]::-webkit-date-and-time-value { text-align: left; min-width: 0; }
+input[type=date]::-webkit-datetime-edit, input[type=time]::-webkit-datetime-edit { padding: 0; }
+@media (max-width: 380px) { .fgrid { grid-template-columns: minmax(0, 1fr); } }
 .fgrid .full { grid-column: 1 / -1; }
 .toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-weight: 600; padding: 4px 0; }
 .toggle input { width: 24px; height: 24px; accent-color: var(--violet); }
@@ -176,7 +183,7 @@ dialog::backdrop { background: rgba(10, 6, 30, .6); }
 [data-motion="off"] dialog[open] { animation: none; }
 .sh-head { padding: 22px 22px 20px; display: grid; gap: 8px; position: relative; flex: none; }
 .sh-close { position: absolute; right: 14px; top: 14px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: #fff; color: var(--on-bright); box-shadow: 0 0 0 2px rgba(13, 26, 61, .25); font-size: 30px; font-weight: 600; line-height: 1; display: grid; place-items: center; padding: 0 0 3px; }
-.sh-body { padding: 18px 22px calc(26px + var(--safe-b)); overflow-y: auto; display: grid; gap: 16px; }
+.sh-body { padding: 18px 22px calc(26px + var(--safe-b)); overflow-y: auto; overflow-x: hidden; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
 .steps { display: grid; gap: 0; counter-reset: s; }
 .step { padding: 12px 0; border-bottom: 1px solid var(--line); display: grid; gap: 2px; }
 .step:last-child { border-bottom: 0; }
