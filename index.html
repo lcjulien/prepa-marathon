@@ -7,7 +7,7 @@
   <meta name="description" content="Plan d'entraînement personnel pour le Marathon de Paris, le 4 avril 2027.">
   <meta name="theme-color" content="#ffffff">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -33,6 +33,12 @@
   <div id="toast" role="status" aria-live="polite"></div>
   <input type="file" id="import-file" accept="application/json,.json" hidden>
   <noscript>Cette application a besoin de JavaScript.</noscript>
-  <script type="module" src="js/app.js"></script>
+  <script>
+    window.addEventListener('error', function (e) {
+      var v = document.getElementById('view');
+      if (v && !v.children.length) v.innerHTML = '<div style="padding:20px;font:16px system-ui"><b>Erreur de chargement.</b><br>' + String(e.message).replace(/</g, '&lt;') + '<br><br>Recharge la page. Si le problème persiste, envoie-moi ce message.</div>';
+    });
+  </script>
+  <script src="app.js" defer></script>
 </body>
 </html>

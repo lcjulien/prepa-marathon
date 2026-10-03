@@ -6,7 +6,7 @@ Aucune donnée n'est envoyée sur un serveur : tout est stocké sur ton téléph
 
 ## Publier sur GitHub Pages
 
-1. Crée un dépôt GitHub (par exemple `prepa-marathon`) et envoie-y le contenu de ce dossier à la racine.
+1. Crée un dépôt GitHub (par exemple `prepa-marathon`) et envoie-y **le contenu** du dossier : `index.html` doit se trouver à la racine du dépôt, pas dans un sous-dossier.
 2. Dans le dépôt : **Settings > Pages > Build and deployment > Source : Deploy from a branch**, branche `main`, dossier `/ (root)`.
 3. Après une minute, l'application est disponible sur `https://<ton-pseudo>.github.io/prepa-marathon/`.
 4. Sur le téléphone : ouvre l'adresse, puis **Ajouter à l'écran d'accueil** (Safari : Partager, puis Sur l'écran d'accueil ; Chrome : menu, puis Installer l'application).
@@ -22,9 +22,7 @@ Les données vivent dans le navigateur. Utilise **Plus > Exporter en JSON** rég
 ## Structure
 
 - `index.html`, `styles.css` : interface
-- `js/plan.js` : génération du plan, allures, stratégie de course (fonctions pures)
-- `js/app.js` : vues et interactions
-- `js/store.js` : stockage local
+- `app.js` : script unique (moteur du plan, stockage, vues). Fonctionne aussi en ouvrant `index.html` directement.
 - `sw.js`, `manifest.webmanifest`, `icons/` : mode hors-ligne et installation
 
 ## Tester en local

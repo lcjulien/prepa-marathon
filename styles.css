@@ -48,10 +48,10 @@ main { max-width: 680px; margin: 0 auto; padding: 16px 16px 8px; display: grid; 
 /* Hero compte à rebours */
 .hero { background: linear-gradient(135deg, var(--navy) 0%, var(--blue) 55%, var(--violet) 100%); color: #fff; border-radius: var(--r-xl); padding: 24px 22px 22px; display: grid; gap: 18px; position: relative; overflow: hidden; }
 .hero::before, .hero::after { content: ""; position: absolute; border-radius: 50%; pointer-events: none; }
-.hero::before { width: 220px; height: 220px; background: var(--orange); right: -70px; top: -90px; }
-.hero::after { width: 120px; height: 120px; background: var(--pink); right: 70px; top: -60px; }
+.hero::before { width: 180px; height: 180px; background: var(--orange); right: -60px; top: -80px; }
+.hero::after { width: 90px; height: 90px; background: var(--pink); right: 84px; top: -48px; }
 .hero > * { position: relative; z-index: 1; }
-.hero .kicker { font-weight: 600; font-size: 15px; max-width: 62%; }
+.hero .kicker { font-weight: 600; font-size: 15px; max-width: 58%; }
 .cd { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 8px; align-items: end; }
 .cd b { display: block; font-family: var(--display); font-weight: 900; font-size: clamp(64px, 24vw, 112px); line-height: .85; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .cd div:not(:first-child) b { font-size: clamp(40px, 14vw, 64px); color: var(--pink); }
@@ -62,19 +62,20 @@ main { max-width: 680px; margin: 0 auto; padding: 16px 16px 8px; display: grid; 
 
 /* Types de séances */
 .k-easy { background: var(--blue); color: #fff; }
-.k-fartlek, .k-vma, .k-seuil { background: var(--orange); color: var(--ink); }
+.k-fartlek, .k-court, .k-longfrac, .k-cotes, .k-pyramide, .k-seuil { background: var(--orange); color: var(--ink); }
+.k-prog { background: linear-gradient(100deg, var(--blue), var(--violet) 60%, var(--pink)); color: #fff; }
 .k-mp { background: var(--pink); color: var(--navy); }
 .k-long { background: var(--violet); color: #fff; }
 .k-test, .k-race { background: var(--navy); color: #fff; }
 .k-strength { background: #cfc6f5; color: var(--ink); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .k-test, :root:not([data-theme="light"]) .k-race { background: #000; } :root:not([data-theme="light"]) .k-strength { background: #4a3d86; color: #fff; } :root:not([data-theme="light"]) .k-long { background: #6a3fe0; } }
 .chip { display: inline-block; font-family: var(--display); font-weight: 800; text-transform: uppercase; font-size: 15px; line-height: 1; padding: 5px 10px 4px; border-radius: 999px; background: rgba(255, 255, 255, .26); width: fit-content; }
-.k-mp .chip, .k-fartlek .chip, .k-vma .chip, .k-seuil .chip, .k-strength .chip { background: rgba(23, 17, 46, .14); }
+.k-mp .chip, .k-fartlek .chip, .k-court .chip, .k-longfrac .chip, .k-cotes .chip, .k-pyramide .chip, .k-seuil .chip, .k-strength .chip { background: rgba(23, 17, 46, .14); }
 .big { font-family: var(--display); font-weight: 900; text-transform: uppercase; font-size: 44px; line-height: .92; }
 .panel .when { font-weight: 600; font-size: 15px; opacity: .92; }
 .panel .meta { display: flex; flex-wrap: wrap; gap: 6px; }
 .panel .meta span { background: rgba(255, 255, 255, .22); border-radius: 999px; padding: 4px 11px; font-weight: 600; font-size: 14px; }
-.k-mp .meta span, .k-fartlek .meta span, .k-vma .meta span, .k-seuil .meta span, .k-strength .meta span { background: rgba(23, 17, 46, .13); }
+.k-mp .meta span, .k-fartlek .meta span, .k-court .meta span, .k-longfrac .meta span, .k-cotes .meta span, .k-pyramide .meta span, .k-seuil .meta span, .k-strength .meta span { background: rgba(23, 17, 46, .13); }
 
 /* Barre de progression */
 .bar { height: 14px; border-radius: 999px; background: var(--line); overflow: hidden; }
@@ -89,7 +90,7 @@ main { max-width: 680px; margin: 0 auto; padding: 16px 16px 8px; display: grid; 
 .alert.info { background: var(--card); border: 1px solid var(--line); color: var(--ink); }
 .btn { border: 0; border-radius: 999px; padding: 12px 20px; font-weight: 600; background: var(--ink); color: var(--paper); min-height: 46px; }
 .btn.alt { background: var(--orange); color: var(--ink); }
-.btn.ghost { background: transparent; border: 2px solid currentColor; }
+.btn.ghost { background: transparent; color: var(--ink); border: 2px solid currentColor; }
 .btn.yellow { background: var(--orange); color: var(--navy); }
 .btn.danger { background: #d62839; color: #fff; }
 .btn.small { padding: 8px 14px; min-height: 36px; font-size: 14px; }
