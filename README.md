@@ -1,7 +1,7 @@
 # Prépa Marathon de Paris 2027
 
 Application web installable (PWA) pour préparer le Marathon de Paris du 4 avril 2027 en 3h20.
-Plan de 26 semaines (5 octobre 2026 au 4 avril 2027), séances détaillées, suivi manuel, prédiction de chrono, plan de course et check-list.
+Plan de 26 semaines (5 octobre 2026 au 4 avril 2027), séances détaillées, test de VMA (demi-Cooper) qui calibre les allures de fractionné, suivi manuel, prédiction de chrono, plan de course et check-list.
 Aucune donnée n'est envoyée sur un serveur : tout est stocké sur ton téléphone (IndexedDB).
 
 ## Publier sur GitHub Pages
@@ -13,17 +13,17 @@ Aucune donnée n'est envoyée sur un serveur : tout est stocké sur ton téléph
 
 ## Mettre à jour
 
-Modifie les fichiers, change la valeur `VERSION` dans `sw.js` (par exemple `v2`) et pousse sur GitHub. L'application se met à jour à la prochaine ouverture avec du réseau.
+Modifie les fichiers, change la valeur `VERSION` dans `sw.js` (par exemple `v12`) et pousse sur GitHub. À la prochaine ouverture avec du réseau, l'application détecte la nouvelle version, s'installe et se recharge toute seule (si une fiche est ouverte, elle te demande de recharger).
 
 ## Sauvegarde
 
-Les données vivent dans le navigateur. Utilise **Plus > Exporter en JSON** régulièrement, surtout avant de changer de téléphone ou de vider le navigateur.
+Les données vivent dans le navigateur (IndexedDB, avec une copie de secours dans le stockage local). Utilise **Plus > Exporter en JSON** régulièrement, surtout avant de changer de téléphone ou de vider le navigateur. Sur téléphone, l'export ouvre la feuille de partage : enregistre le fichier dans Fichiers, iCloud Drive ou Drive, ou envoie-le-toi par mail. L'écran Plus indique la date du dernier export.
 
 ## Structure
 
 - `index.html`, `styles.css` : interface
 - `app.js` : script unique (moteur du plan, stockage, vues). Fonctionne aussi en ouvrant `index.html` directement.
-- `sw.js`, `manifest.webmanifest`, `icons/` : mode hors-ligne et installation
+- `sw.js`, `manifest.webmanifest`, `icons/` : mode hors-ligne et installation (`apple-touch-icon.png` est l'icône opaque utilisée par l'écran d'accueil iPhone)
 
 ## Tester en local
 
