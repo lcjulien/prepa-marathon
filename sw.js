@@ -1,6 +1,6 @@
 // Service worker : fonctionnement hors-ligne.
 // Incrémente VERSION à chaque mise à jour de l'application pour forcer le rafraîchissement du cache.
-const VERSION = 'v5';
+const VERSION = 'v6';
 const CACHE = `prepa-marathon-${VERSION}`;
 const SHELL = ['./', 'index.html', 'styles.css', 'manifest.webmanifest', 'app.js', 'icons/logo.png', 'icons/icon-192.png', 'icons/icon-512.png'];
 

@@ -418,7 +418,8 @@ function viewPlan() {
     const lab = `<div class="dlabel"><b>${WD[d]}</b><span>${new Date(date + 'T12:00:00').getDate()}</span></div>`;
     const body = list.length ? list.map(s => {
       const x = st(s.id), cls = x.status || '';
-      return `<button class="sess k-${s.kind} ${cls}" data-action="open" data-id="${s.id}"><span class="chip">${KIND_LABEL[s.kind]}</span><span class="t">${esc(s.title)}</span><span class="m">${s.km ? km(x.status === 'done' && x.km ? x.km : s.km) : '25 min'}${x.movedTo ? ', déplacée' : ''}</span>${x.status ? `<span class="st" aria-label="${x.status === 'done' ? 'Faite' : 'Manquée'}">${x.status === 'done' ? '✓' : '✕'}</span>` : ''}</button>`;
+      const ck = x.status === 'done', ms = x.status === 'missed';
+      return `<div class="sesswrap"><button class="sess k-${s.kind} ${cls}" data-action="open" data-id="${s.id}"><span class="chip">${KIND_LABEL[s.kind]}</span><span class="t">${esc(s.title)}</span><span class="m">${s.km ? km(ck && x.km ? x.km : s.km) : '25 min'}${x.movedTo ? ', déplacée' : ''}${ms ? ', manquée' : ''}</span></button><button class="qcheck ${cls}" role="checkbox" aria-checked="${ck}" aria-label="Valider la séance : ${esc(s.title)}" data-action="quick" data-id="${s.id}">${ck ? '✓' : ms ? '✕' : ''}</button></div>`;
     }).join('') : '<div class="restline">Repos</div>';
     return `<div class="day ${date === today ? 'today' : ''}">${lab}<div style="display:grid;gap:8px">${body}</div></div>`;
   }).join('');
@@ -631,6 +632,18 @@ const A = {
   close: closeSheet,
   log: el => sessionSheet(el.dataset.id, 'log'),
   move: el => sessionSheet(el.dataset.id, 'move'),
+  quick: el => {
+    const s = flat().find(x => x.id === el.dataset.id), x = st(s.id);
+    if (x.status === 'done') {
+      if ((x.dur || x.rpe || x.hr || x.note) && !confirm('Décocher cette séance effacera les détails enregistrés (durée, ressenti, notes). Continuer ?')) return;
+      const y = { ...x }; ['status', 'km', 'dur', 'rpe', 'hr', 'shoe', 'note', 'doneDate'].forEach(k => delete y[k]); S.sess[s.id] = y;
+      commit(); toast('Séance décochée'); return;
+    }
+    const strength = s.kind === 'strength', plannedKm = strength ? 0 : Math.round(s.km * 10) / 10;
+    const shoe = !strength && (x.shoe || (S.shoes.some(z => z.id === S.lastShoe && !z.retired) ? S.lastShoe : null));
+    S.sess[s.id] = { ...x, status: 'done', doneDate: effDate(s), km: x.km ?? plannedKm, ...(shoe ? { shoe } : {}) };
+    commit(); toast(strength ? 'Séance validée' : `Séance validée : ${km(S.sess[s.id].km)}`);
+  },
   'save-log': el => { const s = flat().find(x => x.id === el.dataset.id), v = readLog($('#logform'), s.kind === 'strength'); if (!v) return; S.sess[s.id] = { ...st(s.id), ...v, status: 'done' }; if (v.shoe) S.lastShoe = v.shoe; closeSheet(); commit(); toast('Séance enregistrée'); },
   'save-move': el => { const d = $('#movedate').value; if (!d) return; S.sess[el.dataset.id] = { ...st(el.dataset.id), movedTo: d }; closeSheet(); commit(); toast('Séance déplacée'); },
   unmove: el => { const x = { ...st(el.dataset.id) }; delete x.movedTo; S.sess[el.dataset.id] = x; closeSheet(); commit(); },

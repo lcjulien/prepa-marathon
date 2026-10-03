@@ -110,12 +110,16 @@ main { max-width: 680px; margin: 0 auto; padding: 16px 16px 8px; display: grid; 
 .dlabel { display: grid; align-content: center; justify-items: center; font-family: var(--display); font-weight: 800; text-transform: uppercase; line-height: 1; }
 .dlabel b { font-size: 15px; color: var(--muted); } .dlabel span { font-size: 30px; }
 .day.today .dlabel span { background: var(--ink); color: var(--paper); border-radius: 50%; width: 42px; height: 42px; display: grid; place-items: center; }
-.sess { border: 0; border-radius: var(--r-lg); padding: 14px 16px; text-align: left; display: grid; gap: 6px; position: relative; width: 100%; }
-.sess .t { font-family: var(--display); font-weight: 900; font-size: 26px; text-transform: uppercase; line-height: .95; padding-right: 36px; }
+.sesswrap { position: relative; }
+.sess { border: 0; border-radius: var(--r-lg); padding: 14px 72px 14px 16px; text-align: left; display: grid; gap: 6px; position: relative; width: 100%; min-height: 84px; }
+.sess .t { font-family: var(--display); font-weight: 900; font-size: 26px; text-transform: uppercase; line-height: .95; }
 .sess .m { font-size: 14px; font-weight: 600; opacity: .9; }
 .sess.done { opacity: .8; } .sess.missed { opacity: .6; }
-.sess .st { position: absolute; right: 12px; top: 12px; width: 28px; height: 28px; border-radius: 50%; background: #fff; color: var(--on-bright); display: grid; place-items: center; font-weight: 800; font-size: 14px; }
-.sess.done .st { background: #0b7a47; color: #fff; } .sess.missed .st { background: #d62839; color: #fff; }
+.qcheck { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; border: 3px solid #fff; background: rgba(255, 255, 255, .25); box-shadow: 0 0 0 2px rgba(13, 26, 61, .4); color: #fff; font-size: 24px; font-weight: 800; line-height: 1; display: grid; place-items: center; padding: 0; }
+.qcheck:not(.done):not(.missed) { background: #fff; border-color: rgba(13, 26, 61, .55); box-shadow: none; }
+.qcheck.done { background: #0b7a47; }
+.qcheck.missed { background: #d62839; }
+.qcheck:active { transform: translateY(-50%) scale(.92); }
 .restline { border: 2px dashed var(--line); border-radius: var(--r-lg); padding: 14px 16px; color: var(--muted); font-weight: 600; display: flex; align-items: center; }
 .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .tile { border: 0; border-radius: 20px; padding: 10px 8px 10px 12px; text-align: left; background: var(--card); border: 2px solid var(--line); display: grid; gap: 4px; }
