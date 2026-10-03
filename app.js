@@ -343,7 +343,7 @@ function countdown() {
   if (ms <= 0) return { d: 0, h: 0, m: 0, over: true };
   return { d: Math.floor(ms / 864e5), h: Math.floor(ms % 864e5 / 36e5), m: Math.floor(ms % 36e5 / 6e4), over: false };
 }
-function tick() { const c = countdown(); [['d', c.d], ['h', c.h], ['m', c.m]].forEach(([k, v]) => { const el = document.querySelector(`[data-cd="${k}"]`); if (el) el.textContent = v; }); }
+function tick() { if (G) renderTicker(); const c = countdown(); [['d', c.d], ['h', c.h], ['m', c.m]].forEach(([k, v]) => { const el = document.querySelector(`[data-cd="${k}"]`); if (el) el.textContent = v; }); }
 
 // ---------- Alertes ----------
 function alerts() {
@@ -549,6 +549,40 @@ function viewMore() {
     <div class="btns"><button class="btn" data-action="export">Exporter en JSON</button><button class="btn ghost" data-action="import">Importer un fichier</button><button class="btn danger" data-action="reset">Tout effacer</button></div></section>`;
 }
 
+// ---------- Bandeau défilant : phrases construites à partir de tes données ----------
+const SEPS = ['<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 0l1.8 5.2L14 7l-5.2 1.8L7 14l-1.8-5.2L0 7l5.2-1.8z" fill="currentColor"/></svg>', '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="6" fill="currentColor"/></svg>', '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="1" y="1" width="12" height="12" rx="4" fill="currentColor"/></svg>'];
+function tickerItems() {
+  const c = countdown(), today = Plan.todayIso(), P = G.P, started = today >= Plan.PLAN_START;
+  if (c.over) return ['Marathon de Paris terminé : bravo', `Chrono visé : ${fmtTime(S.settings.targetSec)}`, 'Place à la récupération'];
+  const cw = curWeek(), w = G.weeks[cw - 1], A = actualByWeek(), Pl = plannedByWeek(), runs = flat().filter(isRun), items = [];
+  items.push(c.d <= 0 ? 'C\'est aujourd\'hui : bonne course' : c.d === 1 ? 'Plus qu\'un jour avant le départ' : `J-${c.d} avant le départ`);
+  items.push(started ? `Semaine ${cw} sur ${N_WEEKS}, phase ${w.phase.name.toLowerCase()}${w.rec ? ', semaine de récupération' : ''}` : 'Le plan démarre lundi 5 octobre');
+  const next = runs.filter(s => !st(s.id).status && effDate(s) >= today).sort((x, y) => effDate(x).localeCompare(effDate(y)))[0];
+  if (next) {
+    const d = effDate(next), day = d === today ? 'aujourd\'hui' : d === Plan.addDays(today, 1) ? 'demain' : dFmt(d, { weekday: 'long' });
+    const txt = ['easy', 'long', 'test', 'race'].includes(next.kind) ? next.title : `${KIND_LABEL[next.kind]} ${next.title}`;
+    items.push(`Prochaine séance : ${day}, ${txt.charAt(0).toLowerCase() + txt.slice(1)}`);
+  }
+  if (started) items.push(`Cette semaine : ${num(A[cw])} km sur ${num(Pl[cw])} prévus`);
+  const total = runs.reduce((s, x) => s + (st(x.id).status === 'done' ? st(x.id).km || 0 : 0), 0) + S.extras.reduce((s, e) => s + e.km, 0);
+  if (total > 0) items.push(`${Math.round(total)} km parcourus depuis le début`);
+  else if (started) items.push('Aucune séance validée pour l\'instant : à toi de jouer');
+  const past = runs.filter(s => effDate(s) < today);
+  if (past.length) { const n = past.filter(s => st(s.id).status === 'done').length; items.push(`${n} séance${n > 1 ? 's' : ''} validée${n > 1 ? 's' : ''} sur ${past.length} prévues`); }
+  items.push(`Objectif ${fmtTime(S.settings.targetSec)} : ${fmtPace(P.mp)}/km`);
+  const diff = P.predicted - S.settings.targetSec;
+  items.push(diff > 0 ? `Prédiction ${fmtTime(P.predicted)}, à ${fmtDelta(diff)} de l'objectif` : `Prédiction ${fmtTime(P.predicted)}, objectif à portée`);
+  if (cw < 22) items.push(`Semi test dans ${22 - cw} semaine${22 - cw > 1 ? 's' : ''}`); else if (cw === 22) items.push('Semi test cette semaine');
+  return items;
+}
+let tickerKey = '';
+function renderTicker() {
+  const items = tickerItems(), key = items.join('|'); if (key === tickerKey) return; tickerKey = key;
+  const seg = items.map((t, i) => `<span>${esc(t)}</span>${SEPS[i % SEPS.length]}`).join(''), chars = items.join('').length;
+  const reps = Math.max(1, Math.ceil(1800 / (chars * 9 + items.length * 40))), half = `<span>${seg.repeat(reps)}</span>`;
+  const el = $('#ticker'); el.innerHTML = half + half; el.style.animationDuration = Math.max(30, chars * reps * 0.34) + 's';
+}
+
 // ---------- Rendu ----------
 function render() {
   document.documentElement.dataset.motion = S.settings.reduceMotion ? 'off' : 'on';
@@ -558,6 +592,7 @@ function render() {
   const y = window.scrollY; $('#view').innerHTML = v(); if (ui.keepScroll) { window.scrollTo(0, y); ui.keepScroll = false; }
   if (ui.tab === 'plan') { const el = document.querySelector('#weeks [aria-current="true"]'); el && el.scrollIntoView({ inline: 'center', block: 'nearest' }); }
   if (ui.tab === 'stats') { const c = $('#chart1'); c && (c.scrollLeft = Math.max(0, (curWeek() - 8) * 22)); }
+  renderTicker();
   tick();
 }
 function commit(keep = true) { ui.keepScroll = keep; Store.save(S); regen(); render(); }
@@ -700,8 +735,6 @@ $('#import-file').addEventListener('change', async e => {
 // ---------- Démarrage ----------
 async function init() {
   S = await Store.load(); Store.persist(); regen();
-  const seg = '<span>La joie de courir ses 42,195 km</span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 0l1.8 5.2L14 7l-5.2 1.8L7 14l-1.8-5.2L0 7l5.2-1.8z" fill="currentColor"/></svg><span>Objectif 3h20 au 4 avril 2027</span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="6" fill="currentColor"/></svg><span>Régularité, patience, sorties longues</span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="1" y="1" width="12" height="12" rx="4" fill="currentColor"/></svg>';
-  $('#ticker').innerHTML = `<span>${seg}</span><span>${seg}</span>`;
   render(); setInterval(tick, 20000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { tick(); if (ui.tab === 'home') render(); } });
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
