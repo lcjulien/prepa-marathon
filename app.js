@@ -252,10 +252,15 @@ function racePlan(T) {
     return { km, label: km === 21.0975 ? 'Semi' : km === 42.195 ? 'Arrivée' : `${km} km`, cum: f(km), pace: (f(km) - f(prev)) / (km - prev) };
   });
 }
-function fuelPlan(T, carbsPerH, gelCarbs) {
-  const mp = T / 42.195, every = gelCarbs / carbsPerH * 3600, rows = [];
-  for (let t = Math.min(every, 1800), i = 0; i < 40 && every > 0; t += every, i++) { const km = t / mp; if (!(km <= 39)) break; rows.push({ time: t, km }); }
-  return { rows, every, total: rows.length * gelCarbs };
+// Glucides en course : la boisson d'effort apporte une part de l'objectif, les gels couvrent le reste.
+function fuelPlan(T, carbsPerH, gelCarbs, drinkMl = 0, drinkPer100 = 0) {
+  const mp = T / 42.195, hours = T / 3600;
+  const drinkPerH = Math.max(0, drinkMl) * Math.max(0, drinkPer100) / 100;   // g/h apportés par la boisson
+  const gelPerH = Math.max(0, carbsPerH - drinkPerH);                        // g/h restant à couvrir avec des gels
+  const every = gelPerH >= 5 ? gelCarbs / gelPerH * 3600 : Infinity, rows = [];
+  if (Number.isFinite(every)) for (let t = Math.min(every, 1800), i = 0; i < 40; t += every, i++) { const km = t / mp; if (!(km <= 39)) break; rows.push({ time: t, km }); }
+  const gelTotal = rows.length * gelCarbs, drinkTotal = drinkPerH * hours, total = gelTotal + drinkTotal;
+  return { rows, every, hours, drinkPerH, gelPerH, gelTotal, drinkTotal, drinkMlTotal: Math.max(0, drinkMl) * hours, total, perHour: total / hours };
 }
 
 return { RACE_DATE, PLAN_START, N_WEEKS, RECOVERY, toIso, addDays, diffDays, weekOf, todayIso, fmtPace, fmtTime, fmtClock, parseTime, riegel, computePaces, phaseOf, PHASE_LIST, KIND_LABEL, KIND_DEF, buildWeek, generate, racePlan, fuelPlan };
@@ -267,7 +272,7 @@ const DB = 'prepa-marathon-2027', STORE = 'kv', KEY = 'state';
 
 const defaultState = () => ({
   v: 1,
-  settings: { targetSec: 12000, startTime: '08:30', sessionsMode: 'auto', strength: true, carbsPerH: 60, gelCarbs: 25, reduceMotion: false },
+  settings: { targetSec: 12000, startTime: '08:30', sessionsMode: 'auto', strength: true, carbsPerH: 60, gelCarbs: 25, drinkMl: 400, drinkCarbs: 6, reduceMotion: false },
   refs: [{ id: 'r0', date: '2026-09-27', distKm: 20, timeSec: 5460, label: '20 km de Tours' }],
   activeRef: 'r0',
   cooper: [],      // tests demi-Cooper : { id, date, distM }
@@ -308,6 +313,8 @@ const merge = v => {
   settings.targetSec = clampN(settings.targetSec, d.settings.targetSec, 7200, 25200);
   settings.carbsPerH = clampN(settings.carbsPerH, 60, 30, 100);
   settings.gelCarbs = clampN(settings.gelCarbs, 25, 10, 60);
+  settings.drinkMl = clampN(settings.drinkMl, 400, 0, 1200);
+  settings.drinkCarbs = clampN(settings.drinkCarbs, 6, 0, 15);
   settings.sessionsMode = ['auto', '4', '5'].includes(String(settings.sessionsMode)) ? String(settings.sessionsMode) : 'auto';
   if (!/^\d{2}:\d{2}$/.test(String(settings.startTime))) settings.startTime = '08:30';
   settings.strength = settings.strength !== false; settings.reduceMotion = !!settings.reduceMotion;
@@ -583,11 +590,11 @@ const CHECK = [
   ['Dans les semaines qui précèdent', [['c1', 'Retirer le dossard (vérifier dates, lieu et pièces demandées sur le site officiel)'], ['c2', 'Tester tenue, gels et boisson sur au moins deux sorties longues'], ['c3', 'Choisir les chaussures et les porter sur 100 km minimum'], ['c4', 'Repérer le trajet jusqu\'au départ et les horaires de transports'], ['c5', 'Réserver l\'hébergement si besoin']]],
   ['La veille', [['v1', 'Préparer la tenue et épingler le dossard'], ['v2', 'Repas riche en glucides, rien de nouveau'], ['v3', 'Préparer les gels et la flasque'], ['v4', 'Charger la montre'], ['v5', 'Régler le réveil et se coucher tôt']]],
   ['Le matin', [['m1', 'Petit-déjeuner habituel environ 3 h avant le départ'], ['m2', 'Crème anti-frottements et pansements'], ['m3', 'Sac pour la consigne'], ['m4', 'Vêtement jetable pour patienter au départ'], ['m5', 'Échauffement léger de 10 minutes']]],
-  ['Matériel', [['e1', 'Chaussures et chaussettes testées'], ['e2', 'Short ou collant, maillot'], ['e3', 'Casquette ou bandeau, lunettes'], ['e4', 'Montre ou chronomètre'], ['e5', 'Gels (nombre selon le plan ci-dessus)']]],
+  ['Matériel', [['e1', 'Chaussures et chaussettes testées'], ['e2', 'Short ou collant, maillot'], ['e3', 'Casquette ou bandeau, lunettes'], ['e4', 'Montre ou chronomètre'], ['e5', 'Gels et boisson d\'effort (quantités du plan Nutrition)']]],
 ];
 
 function viewRace() {
-  const T = S.settings.targetSec, rp = Plan.racePlan(T), fp = Plan.fuelPlan(T, S.settings.carbsPerH, S.settings.gelCarbs), mp = T / 42.195;
+  const T = S.settings.targetSec, rp = Plan.racePlan(T), fp = Plan.fuelPlan(T, S.settings.carbsPerH, S.settings.gelCarbs, S.settings.drinkMl, S.settings.drinkCarbs), mp = T / 42.195;
   const all = CHECK.flatMap(g => g[1]), done = all.filter(i => S.checklist[i[0]]).length;
   return `
   <h2 class="sec-title">Stratégie d'allure</h2>
@@ -595,10 +602,19 @@ function viewRace() {
     <table><tr><th>Repère</th><th>Allure</th><th>Passage</th></tr>${rp.map(r => `<tr><td>${r.label}</td><td>${fmtPace(r.pace)}/km</td><td><b>${fmtClock(r.cum)}</b></td></tr>`).join('')}</table>
     <p class="small muted">Le parcours 2027 n'est pas encore dévoilé. Ces passages sont calculés sur des kilomètres réguliers, à ajuster dès que le tracé sera publié.</p></section>
   <h2 class="sec-title">Nutrition</h2>
-  <section class="card"><div class="fgrid"><label class="f">Glucides visés (g/heure)<input type="number" inputmode="numeric" min="30" max="100" value="${S.settings.carbsPerH}" data-change="carbsPerH"></label><label class="f">Glucides par gel (g)<input type="number" inputmode="numeric" min="10" max="60" value="${S.settings.gelCarbs}" data-change="gelCarbs"></label></div>
-    <p>Prévois <b>${fp.rows.length} gels</b> (environ ${fp.total} g de glucides), un toutes les ${Math.round(fp.every / 60)} minutes.</p>
-    <table><tr><th>Gel</th><th>Chrono</th><th>Kilomètre</th></tr>${fp.rows.map((r, i) => `<tr><td>${i + 1}</td><td>${fmtClock(r.time)}</td><td>${num(r.km)}</td></tr>`).join('')}</table>
-    <p class="small muted">Bois quelques gorgées à chaque ravitaillement, environ tous les 5 km. Repères généraux : entraîne ton estomac sur tes sorties longues et ne teste rien de nouveau le jour de la course.</p></section>
+  <section class="card"><div class="fgrid">
+    <label class="f">Glucides visés (g/heure)<input type="number" inputmode="numeric" min="30" max="100" value="${S.settings.carbsPerH}" data-change="carbsPerH"></label>
+    <label class="f">Glucides par gel (g)<input type="number" inputmode="numeric" min="10" max="60" value="${S.settings.gelCarbs}" data-change="gelCarbs"></label>
+    <label class="f">Boisson bue (ml par heure)<input type="number" inputmode="numeric" min="0" max="1200" step="50" value="${S.settings.drinkMl}" data-change="drinkMl"></label>
+    <label class="f">Glucides de la boisson (g pour 100 ml)<input type="number" inputmode="decimal" min="0" max="15" step="0.5" value="${S.settings.drinkCarbs}" data-change="drinkCarbs"></label></div>
+    <p class="small muted">Une boisson d'effort classique contient environ 6 g de glucides pour 100 ml. Mets 0 g si tu bois seulement de l'eau.</p>
+    <table><tr><th>Source</th><th>Par heure</th><th>Sur ${fmtTime(T)}</th></tr>
+      <tr><td>Boisson</td><td>${S.settings.drinkMl} ml, ${num(fp.drinkPerH)} g</td><td>${num(fp.drinkMlTotal / 1000)} L, ${Math.round(fp.drinkTotal)} g</td></tr>
+      <tr><td>Gels</td><td>${fp.rows.length ? num(fp.gelTotal / fp.hours) : 0} g</td><td>${fp.rows.length} gel${fp.rows.length > 1 ? 's' : ''}, ${fp.gelTotal} g</td></tr>
+      <tr><td><b>Total estimé</b></td><td><b>${Math.round(fp.perHour)} g</b></td><td><b>${Math.round(fp.total)} g</b></td></tr></table>
+    <p>${fp.gelPerH < 5 ? `Ta boisson couvre déjà les <b>${S.settings.carbsPerH} g/h</b> visés : aucun gel n'est nécessaire. Garde-en un ou deux en secours.` : `Objectif de <b>${S.settings.carbsPerH} g/h</b> : la boisson apporte ${num(fp.drinkPerH)} g/h, il reste <b>${num(fp.gelPerH)} g/h</b> à couvrir avec des gels. Prévois <b>${fp.rows.length} gel${fp.rows.length > 1 ? 's' : ''}</b>, un toutes les ${Math.round(fp.every / 60)} minutes.`}${fp.perHour < S.settings.carbsPerH - 3 && fp.gelPerH >= 5 ? ` L'apport estimé (${Math.round(fp.perHour)} g/h) reste un peu sous l'objectif, car le premier gel est pris à 30 minutes et le dernier avant le km 39. Tu peux compenser avec la boisson ou un gel de plus.` : ''}</p>
+    ${fp.rows.length ? `<table><tr><th>Gel</th><th>Chrono</th><th>Kilomètre</th></tr>${fp.rows.map((r, i) => `<tr><td>${i + 1}</td><td>${fmtClock(r.time)}</td><td>${num(r.km)}</td></tr>`).join('')}</table>` : ''}
+    <p class="small muted">Bois quelques gorgées à chaque ravitaillement, environ tous les 5 km. Vérifie sur le site de l'organisateur ce qui est proposé sur le parcours, et entraîne ton estomac sur tes sorties longues : ne teste rien de nouveau le jour de la course.${S.settings.carbsPerH > 90 ? ' Au-delà de 90 g/h, l\'estomac demande un entraînement progressif sur plusieurs semaines.' : ''}</p></section>
   <h2 class="sec-title">Check-list <span class="muted" style="font-size:22px">${done}/${all.length}</span></h2>
   ${CHECK.map(([g, items]) => `<section class="card"><h3>${g}</h3>${items.map(([id, t]) => `<label class="check"><input type="checkbox" data-change="check" data-id="${id}" ${S.checklist[id] ? 'checked' : ''}><span>${esc(t)}</span></label>`).join('')}</section>`).join('')}`;
 }
@@ -889,6 +905,8 @@ const C = {
   motion: el => { S.settings.reduceMotion = el.checked; commit(); },
   carbsPerH: el => { S.settings.carbsPerH = Math.min(100, Math.max(30, Number(el.value) || 60)); commit(); },
   gelCarbs: el => { S.settings.gelCarbs = Math.min(60, Math.max(10, Number(el.value) || 25)); commit(); },
+  drinkMl: el => { const v = parseFloat(String(el.value).replace(',', '.')); S.settings.drinkMl = Math.min(1200, Math.max(0, Number.isFinite(v) ? Math.round(v) : 400)); commit(); },
+  drinkCarbs: el => { const v = parseFloat(String(el.value).replace(',', '.')); S.settings.drinkCarbs = Math.min(15, Math.max(0, Number.isFinite(v) ? Math.round(v * 10) / 10 : 6)); commit(); },
   check: el => { S.checklist[el.dataset.id] = el.checked; commit(); },
 };
 
