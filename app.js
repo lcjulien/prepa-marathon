@@ -384,14 +384,30 @@ function paceHint(s) {
 }
 
 // ---------- Compte à rebours ----------
+const pad2 = n => String(n).padStart(2, '0');
 function countdown() {
-  const t = new Date(`${RACE_DATE}T${S.settings.startTime || '08:30'}:00`);
+  let t = new Date(`${RACE_DATE}T${String(S.settings.startTime || '08:30').slice(0, 5)}:00`);
+  if (isNaN(t)) t = new Date(`${RACE_DATE}T08:30:00`);
   const ms = t - new Date();
-  if (ms <= -7 * 36e5) return { d: 0, h: 0, m: 0, over: true, live: false };   // plus de 7 h après le départ : course terminée
-  if (ms <= 0) return { d: 0, h: 0, m: 0, over: false, live: true };           // course en cours
-  return { d: Math.floor(ms / 864e5), h: Math.floor(ms % 864e5 / 36e5), m: Math.floor(ms % 36e5 / 6e4), over: false, live: false };
+  if (ms <= -7 * 36e5) return { d: 0, h: 0, m: 0, s: 0, over: true, live: false };   // plus de 7 h après le départ : course terminée
+  if (ms <= 0) return { d: 0, h: 0, m: 0, s: 0, over: false, live: true };           // course en cours
+  return { d: Math.floor(ms / 864e5), h: Math.floor(ms % 864e5 / 36e5), m: Math.floor(ms % 36e5 / 6e4), s: Math.floor(ms % 6e4 / 1e3), over: false, live: false };
 }
-function tick() { if (G) renderTicker(); const c = countdown(); if ((c.live || c.over) && document.querySelector('[data-cd]')) { render(); return; } [['d', c.d], ['h', c.h], ['m', c.m]].forEach(([k, v]) => { const el = document.querySelector(`[data-cd="${k}"]`); if (el) el.textContent = v; }); }
+// Mise à jour à la seconde des seuls chiffres du compte à rebours (aucun rendu complet)
+function updateCd() {
+  const c = countdown();
+  if ((c.live || c.over) && document.querySelector('[data-cd]')) { render(); return; }
+  [['d', c.d], ['h', pad2(c.h)], ['m', pad2(c.m)], ['s', pad2(c.s)]].forEach(([key, v]) => { const el = document.querySelector(`[data-cd="${key}"]`); if (el && el.textContent !== String(v)) el.textContent = v; });
+}
+// Garde-fou : si les chiffres dépassent leur colonne (police de secours, texte agrandi), on réduit la taille jusqu'à ce que tout tienne
+function fitCd() {
+  const cd = document.querySelector('.cd'); if (!cd) return;
+  cd.style.removeProperty('--cdf');
+  let size = parseFloat(getComputedStyle(cd.querySelector('b')).fontSize) || 40, n = 0;
+  const over = () => [...cd.children].some(c => c.scrollWidth > c.clientWidth + 1);
+  while (over() && size > 18 && n++ < 30) { size *= 0.94; cd.style.setProperty('--cdf', size + 'px'); }
+}
+function tick() { if (G) renderTicker(); updateCd(); }
 
 // ---------- Alertes ----------
 function alerts() {
@@ -434,7 +450,7 @@ function viewHome() {
     <p class="kicker">Marathon de Paris, dimanche 4 avril 2027</p>
     ${c.over ? '<h1 class="d" style="font-size:64px">C\'est fait.<br>Bravo.</h1>' : c.live ? '<h1 class="d" style="font-size:64px">C\'est parti.<br>Bonne course.</h1>' : `
     <div class="cd" role="timer" aria-label="Compte à rebours avant le départ">
-      <div><b data-cd="d">${c.d}</b><span>jours</span></div><div><b data-cd="h">${c.h}</b><span>heures</span></div><div><b data-cd="m">${c.m}</b><span>minutes</span></div>
+      <div><b data-cd="d">${c.d}</b><span>jours</span></div><div><b data-cd="h">${pad2(c.h)}</b><span>heures</span></div><div><b data-cd="m">${pad2(c.m)}</b><span>minutes</span></div><div><b data-cd="s">${pad2(c.s)}</b><span>secondes</span></div>
     </div>`}
     <div class="pills"><span class="pill solid">Objectif ${fmtTime(S.settings.targetSec)}</span><span class="pill">${fmtPace(G.P.mp)}/km</span><span class="pill">Prédiction ${fmtTime(G.P.predicted)}</span></div>
   </section>
@@ -700,6 +716,7 @@ function render() {
   if (ui.tab === 'stats') { const c = $('#chart1'); c && (c.scrollLeft = Math.max(0, (curWeek() - 8) * 22)); }
   renderTicker();
   tick();
+  if (ui.tab === 'home') fitCd();
   afterRender();
 }
 function commit(keep = true) { ui.keepScroll = keep; Store.save(S); regen(); render(); }
@@ -856,7 +873,7 @@ const C = {
   reftype: el => refSheet(el.value, ui.refSession),
   setref: el => { S.activeRef = el.value; commit(); toast('Allures recalculées'); },
   target: el => { const t = parseTime(el.value); if (isNaN(t) || t < 7200 || t > 25200) { toast('Temps invalide. Exemple : 3:20:00'); render(); return; } S.settings.targetSec = t; commit(); },
-  startTime: el => { S.settings.startTime = el.value || '08:30'; commit(); },
+  startTime: el => { S.settings.startTime = /^\d{2}:\d{2}/.test(el.value) ? el.value.slice(0, 5) : '08:30'; commit(); },
   mode: el => applySetting('sessionsMode', el.value),
   strength: el => applySetting('strength', el.checked),
   motion: el => { S.settings.reduceMotion = el.checked; commit(); },
@@ -888,7 +905,10 @@ $('#import-file').addEventListener('change', async e => {
 // ---------- Démarrage ----------
 async function init() {
   S = await Store.load(); Store.persist(); regen();
-  render(); setInterval(tick, 20000);
+  render();
+  let sec = 0; setInterval(() => { if (document.hidden) return; updateCd(); if (++sec % 20 === 0) tick(); }, 1000);
+  window.addEventListener('resize', () => { if (ui.tab === 'home') fitCd(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (ui.tab === 'home') fitCd(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { tick(); if (ui.tab === 'home') render(); } });
   if ('serviceWorker' in navigator) {
     const hadController = !!navigator.serviceWorker.controller; let reloading = false;

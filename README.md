@@ -23,6 +23,7 @@ Les données vivent dans le navigateur (IndexedDB, avec une copie de secours dan
 
 - `index.html`, `styles.css` : interface
 - `app.js` : script unique (moteur du plan, stockage, vues). Fonctionne aussi en ouvrant `index.html` directement.
+- `fonts/` : polices Barlow et Barlow Condensed hébergées avec l'application (licence SIL OFL, voir `fonts/OFL.txt`)
 - `sw.js`, `manifest.webmanifest`, `icons/` : mode hors-ligne et installation (`apple-touch-icon.png` est l'icône opaque utilisée par l'écran d'accueil iPhone)
 
 ## Tester en local

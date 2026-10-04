@@ -1,8 +1,8 @@
 // Service worker : fonctionnement hors-ligne.
 // Incrémente VERSION à chaque mise à jour de l'application pour forcer le rafraîchissement du cache.
-const VERSION = 'v13';
+const VERSION = 'v14';
 const CACHE = `prepa-marathon-${VERSION}`;
-const SHELL = ['./', 'index.html', 'styles.css', 'manifest.webmanifest', 'app.js', 'icons/logo.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png'];
+const SHELL = ['./', 'index.html', 'styles.css', 'manifest.webmanifest', 'app.js', 'icons/logo.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png', 'fonts/Barlow-Regular.woff2', 'fonts/Barlow-Medium.woff2', 'fonts/Barlow-SemiBold.woff2', 'fonts/BarlowCondensed-Bold.woff2', 'fonts/BarlowCondensed-ExtraBold.woff2', 'fonts/BarlowCondensed-Black.woff2'];
 
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => {
