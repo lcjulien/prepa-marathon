@@ -538,9 +538,10 @@ function viewStats() {
   const verdict = diff <= 0 ? 'Ta forme actuelle permet déjà l\'objectif.' : diff < 120 ? 'Objectif à portée : confirme-le avec le semi test de la semaine 22.' : 'L\'écart est important : le volume et la régularité feront la différence.';
   const doneRuns = flat().filter(s => st(s.id).status === 'done' && st(s.id).km);
   const all = [...doneRuns.map(s => st(s.id).km), ...S.extras.map(e => e.km)];
-  const plannedSoFar = flat().filter(s => isRun(s) && effDate(s) < today);
-  const completed = plannedSoFar.filter(s => st(s.id).status === 'done').length;
-  const rate = plannedSoFar.length ? Math.round(completed / plannedSoFar.length * 100) + ' %' : '0 %';
+  const cnt = sessionCounts(), started = today >= Plan.PLAN_START;
+  const rate = cnt.due ? Math.round(cnt.done / cnt.due * 100) + ' %' : '—';
+  const weeksDone = Array.from({ length: N_WEEKS }, (_, i) => i + 1).filter(n => { const r = sessionsOfWeek(n).filter(isRun); return r.length && r.every(s => st(s.id).status === 'done'); }).length;
+  const kmTotal = progress().total;
   const refs = [...S.refs].sort((a, b) => (a.date || '0').localeCompare(b.date || '0'));
   return `
   <h2 class="sec-title">Prédiction</h2>
@@ -569,10 +570,13 @@ function viewStats() {
   <section class="card"><h3>Cumul</h3><div class="chart">${lineChart(Pl, A, cw)}</div>
     <div class="legend"><span><i style="background:var(--orange)"></i>Réalisé : ${Math.round(A.reduce((a, b) => a + b, 0))} km</span><span><i style="background:var(--violet)"></i>Prévu : ${Math.round(Pl.reduce((a, b) => a + b, 0))} km</span></div></section>
   <section class="card"><h3>Bilan</h3><div class="stats">
-    <div class="stat"><b>${completed}/${plannedSoFar.length}</b><span>séances faites</span></div>
-    <div class="stat"><b>${rate}</b><span>taux de réalisation</span></div>
+    <div class="stat"><b>${cnt.due ? `${cnt.done}/${cnt.due}` : cnt.done}</b><span>${cnt.due ? 'séances faites sur celles échues' : started ? 'séances faites, aucune échue pour l\'instant' : 'séance faite, le plan démarre le 5 octobre'}</span></div>
+    <div class="stat"><b>${rate}</b><span>${cnt.due ? 'taux de réalisation' : 'taux de réalisation à venir'}</span></div>
+    <div class="stat"><b>${num(kmTotal)} km</b><span>parcourus au total</span></div>
+    <div class="stat"><b>${weeksDone}/${N_WEEKS}</b><span>semaines bouclées</span></div>
     <div class="stat"><b>${all.length ? num(Math.max(...all)) : 0} km</b><span>plus longue sortie</span></div>
-    <div class="stat"><b>${num(Math.max(0, ...A))} km</b><span>meilleure semaine</span></div></div></section>`;
+    <div class="stat"><b>${num(Math.max(0, ...A))} km</b><span>meilleure semaine</span></div></div>
+    <p class="small muted">${cnt.total} séances de course au programme, hors renforcement. Une séance validée est comptée tout de suite, même si elle est du jour ou à venir.</p></section>`;
 }
 
 const CHECK = [
@@ -640,8 +644,8 @@ function tickerItems() {
   const total = runs.reduce((s, x) => s + (st(x.id).status === 'done' ? st(x.id).km || 0 : 0), 0) + S.extras.reduce((s, e) => s + e.km, 0);
   if (total > 0) items.push(`${Math.round(total)} km parcourus depuis le début`);
   else if (started) items.push('Aucune séance validée pour l\'instant : à toi de jouer');
-  const past = runs.filter(s => effDate(s) < today);
-  if (past.length) { const n = past.filter(s => st(s.id).status === 'done').length; items.push(`${n} séance${n > 1 ? 's' : ''} validée${n > 1 ? 's' : ''} sur ${past.length} prévues`); }
+  const cnt = sessionCounts();
+  if (cnt.due) items.push(`${cnt.done} séance${cnt.done > 1 ? 's' : ''} validée${cnt.done > 1 ? 's' : ''} sur ${cnt.due} échue${cnt.due > 1 ? 's' : ''}`);
   items.push(`Objectif ${fmtTime(S.settings.targetSec)} : ${fmtPace(P.mp)}/km`);
   items.push(`VMA ${num(P.vmaKmh)} km/h, ${P.vmaMeasured ? 'mesurée au test' : 'estimée'}`);
   const diff = P.predicted - S.settings.targetSec;
@@ -677,6 +681,12 @@ function celebrate(title, sub) {
   c.innerHTML = `<strong class="d">${esc(title)}</strong><span>${esc(sub)}</span>`;
   c.classList.remove('show'); void c.offsetWidth; c.classList.add('show');
   clearTimeout(celebrate.t); celebrate.t = setTimeout(() => c.classList.remove('show'), 3800);
+}
+// Séances de course : « faites » = toutes celles validées (quelle que soit leur date) ;
+// « échues » = les faites + celles dont la date est passée. Une séance du jour ou à venir non validée n'est pas encore échue.
+function sessionCounts() {
+  const today = Plan.todayIso(), runs = flat().filter(isRun), isDone = s => st(s.id).status === 'done';
+  return { done: runs.filter(isDone).length, due: runs.filter(s => isDone(s) || effDate(s) < today).length, total: runs.length };
 }
 const progress = () => {
   const runs = flat().filter(isRun), done = runs.filter(s => st(s.id).status === 'done');
